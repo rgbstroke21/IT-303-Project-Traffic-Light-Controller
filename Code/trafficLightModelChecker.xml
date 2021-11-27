@@ -1,0 +1,512 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>// Place global declarations here.
+typedef int[0,1] TrafficLights;
+
+const int NS = 0;
+const int EW = 1;
+
+const int NSVehicleCrossTime = 10;
+const int EWVehicleCrossTime = 8;
+
+const int NSPedistrianCrossTime = 5;
+const int EWPedistrianCrossTime = 4;
+
+bool vehicleCrossing = false;
+
+// red[NS]=1 means NS light is red
+bool red[2] , green[2] , yellow[2];
+// int remTime = 8 ;
+
+
+
+chan start[TrafficLights] , started[TrafficLights];
+chan stop[TrafficLights], stopped[TrafficLights];
+//chan red[TrafficLights] , green[TrafficLights];
+
+
+chan cross , crossed;
+
+bool waiting;
+</declaration>
+	<template>
+		<name x="5" y="5">Vehicle</name>
+		<parameter>int[0,1] curLight , int timeToCross</parameter>
+		<declaration>// Place local declarations here.
+clock t;</declaration>
+		<location id="id0" x="-425" y="-119">
+			<name x="-501" y="-136">Running</name>
+		</location>
+		<location id="id1" x="-245" y="-119">
+			<name x="-314" y="-153">TrafficLightFound</name>
+			<urgent/>
+		</location>
+		<location id="id2" x="110" y="-119">
+			<name x="144" y="-119">Crossing</name>
+			<label kind="invariant" x="127" y="-144">t &lt;= timeToCross</label>
+		</location>
+		<location id="id3" x="-246" y="59">
+			<name x="-263" y="85">Wait</name>
+		</location>
+		<init ref="id0"/>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-170" y="25">green[curLight] &amp;&amp; !green[1-curLight]</label>
+			<label kind="assignment" x="-93" y="68">vehicleCrossing = true,
+t = 0</label>
+			<nail x="110" y="59"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-245" y="-64">!green[curLight]</label>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-153" y="-161">green[curLight] &amp;&amp; !green[1-curLight]</label>
+			<label kind="assignment" x="-110" y="-119">vehicleCrossing = true,
+t = 0</label>
+			<nail x="-212" y="-119"/>
+			<nail x="34" y="-119"/>
+		</transition>
+		<transition controllable="false">
+			<source ref="id0"/>
+			<target ref="id1"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id0"/>
+			<label kind="assignment" x="-144" y="-263">vehicleCrossing = false</label>
+			<nail x="110" y="-238"/>
+			<nail x="-425" y="-238"/>
+		</transition>
+	</template>
+	<template>
+		<name>TrafficSignal</name>
+		<parameter>int[0,1] curLight ,  int yellowTime  </parameter>
+		<declaration>int nextPhase ;
+clock t;</declaration>
+		<location id="id4" x="-442" y="-25">
+			<name x="-477" y="-50">Red</name>
+		</location>
+		<location id="id5" x="25" y="-17">
+			<name x="42" y="-25">Yellow</name>
+			<label kind="invariant" x="68" y="-42">t &lt;= yellowTime</label>
+		</location>
+		<location id="id6" x="595" y="-25">
+			<name x="612" y="-42">Green</name>
+		</location>
+		<init ref="id4"/>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="306" y="0">stop[curLight]?</label>
+			<label kind="assignment" x="314" y="25">t = 0,
+nextPhase = 0,
+green[curLight] = false</label>
+			<nail x="561" y="25"/>
+			<nail x="68" y="25"/>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id4"/>
+			<label kind="guard" x="-306" y="34">t &gt;= yellowTime &amp;&amp; nextPhase == 0</label>
+			<label kind="synchronisation" x="-263" y="8">stopped[curLight]!</label>
+			<nail x="-8" y="34"/>
+			<nail x="-365" y="34"/>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id6"/>
+			<label kind="guard" x="212" y="-68">t &gt;= yellowTime &amp;&amp; nextPhase == 1</label>
+			<label kind="synchronisation" x="255" y="-93">started[curLight]!</label>
+			<label kind="assignment" x="229" y="-110">green[curLight] = true</label>
+			<nail x="51" y="-68"/>
+			<nail x="552" y="-68"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="-255" y="-68">start[curLight]?</label>
+			<label kind="assignment" x="-255" y="-110">t = 0,
+nextPhase = 1</label>
+			<nail x="-365" y="-68"/>
+			<nail x="-17" y="-68"/>
+		</transition>
+	</template>
+	<template>
+		<name>Pedistrian</name>
+		<parameter>int curLight , int timeToCross</parameter>
+		<declaration>clock t;
+</declaration>
+		<location id="id7" x="-102" y="178">
+			<name x="-119" y="195">Wait</name>
+		</location>
+		<location id="id8" x="93" y="178">
+			<name x="25" y="153">Crossing</name>
+			<label kind="invariant" x="83" y="195">t&lt;=timeToCross</label>
+		</location>
+		<location id="id9" x="-289" y="-8">
+			<name x="-306" y="8">Walking</name>
+		</location>
+		<location id="id10" x="-102" y="-8">
+			<name x="-128" y="-59">WantToCross</name>
+		</location>
+		<init ref="id9"/>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id9"/>
+			<label kind="synchronisation" x="246" y="-34">crossed!</label>
+			<label kind="assignment" x="246" y="-8">waiting = false</label>
+			<nail x="246" y="178"/>
+			<nail x="246" y="-178"/>
+			<nail x="-289" y="-178"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id8"/>
+			<label kind="synchronisation" x="-42" y="161">cross?</label>
+			<label kind="assignment" x="-34" y="178">t = 0</label>
+		</transition>
+		<transition controllable="false">
+			<source ref="id9"/>
+			<target ref="id10"/>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id7"/>
+			<label kind="assignment" x="-187" y="76">waiting = true</label>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id8"/>
+			<label kind="synchronisation" x="93" y="51">cross?</label>
+			<label kind="assignment" x="93" y="34">t = 0</label>
+			<nail x="93" y="-8"/>
+		</transition>
+	</template>
+	<template>
+		<name>Controller</name>
+		<location id="id11" x="-289" y="-68">
+			<name x="-442" y="-51">PedestrianOrTraffic</name>
+		</location>
+		<location id="id12" x="-59" y="-68">
+			<name x="-110" y="-59">ChangingToEast</name>
+		</location>
+		<location id="id13" x="-59" y="119">
+			<name x="-127" y="76">PedestrianOrTraffic2</name>
+		</location>
+		<location id="id14" x="-289" y="119">
+			<name x="-408" y="85">ChangingToNorth</name>
+		</location>
+		<location id="id15" x="-518" y="-161">
+			<name x="-637" y="-195">PedestrianCrossing</name>
+		</location>
+		<location id="id16" x="-450" y="255">
+			<name x="-603" y="255">NorthDirectionFlowing</name>
+		</location>
+		<location id="id17" x="127" y="272">
+			<name x="135" y="289">PedestrianCrossing2</name>
+		</location>
+		<location id="id18" x="76" y="-204">
+			<name x="66" y="-238">EastDirectionFlowing</name>
+		</location>
+		<init ref="id11"/>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id12"/>
+			<label kind="guard" x="76" y="-136">!vehicleCrossing</label>
+			<label kind="synchronisation" x="76" y="-161">stop[EW]!</label>
+			<nail x="76" y="-144"/>
+			<nail x="76" y="-68"/>
+		</transition>
+		<transition>
+			<source ref="id16"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-561" y="153">!vehicleCrossing</label>
+			<label kind="synchronisation" x="-510" y="170">stop[NS]!</label>
+			<nail x="-450" y="119"/>
+			<nail x="-450" y="119"/>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id15"/>
+			<label kind="guard" x="-365" y="-187">waiting</label>
+			<label kind="synchronisation" x="-365" y="-161">cross!</label>
+			<nail x="-289" y="-161"/>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id11"/>
+			<label kind="synchronisation" x="-578" y="-102">crossed?</label>
+			<nail x="-518" y="-68"/>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id13"/>
+			<label kind="synchronisation" x="-34" y="272">crossed?</label>
+			<nail x="-59" y="272"/>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id17"/>
+			<label kind="guard" x="17" y="93">waiting</label>
+			<label kind="synchronisation" x="25" y="127">cross!</label>
+			<nail x="127" y="119"/>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id18"/>
+			<label kind="synchronisation" x="-136" y="-170">started[EW]?</label>
+			<nail x="-59" y="-119"/>
+			<nail x="-59" y="-204"/>
+			<nail x="-8" y="-204"/>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id16"/>
+			<label kind="synchronisation" x="-323" y="229">started[NS]?</label>
+			<nail x="-289" y="255"/>
+			<nail x="-357" y="255"/>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id11"/>
+			<label kind="synchronisation" x="-289" y="17">stopped[NS]?</label>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-204" y="119">!waiting</label>
+			<label kind="synchronisation" x="-212" y="102">start[NS]!</label>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id13"/>
+			<label kind="synchronisation" x="-59" y="17">stopped[EW]?</label>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id12"/>
+			<label kind="guard" x="-212" y="-68">!waiting</label>
+			<label kind="synchronisation" x="-212" y="-93">start[EW]!</label>
+		</transition>
+	</template>
+	<system>// Delcare the two traffic lights
+TL1 = TrafficSignal( NS , 5 );
+TL2 = TrafficSignal( EW , 5 );
+
+// declare the controller for traffic lights
+ctrl = Controller();
+
+
+// we define two vehicles one along the NS direction and the other along the EW direction
+vehicle1 = Vehicle( NS , NSVehicleCrossTime);
+vehicle2 = Vehicle( EW , EWVehicleCrossTime);
+
+
+// Thes are pedestrian crossing the road
+pedestrian = Pedistrian( NS ,  1);
+
+
+// We want to start all these processes
+system TL1 , TL2 , ctrl  ,    vehicle1 , vehicle2 ,  pedestrian ;
+</system>
+	<queries>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; vehicle1.Crossing</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; vehicle1.Wait</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; vehicle1.TrafficLightFound</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; vehicle1.Running</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; vehicle2.Crossing</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; vehicle2.Wait</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; vehicle2.TrafficLightFound</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; vehicle2.Running</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; TL2.Yellow</formula>
+			<comment>Eventually TL2( EW Traffic Light ) becomes Yellow</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; TL2.Red</formula>
+			<comment>Eventually TL2(EW Traffic Light) becomes red</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; TL2.Green</formula>
+			<comment>Eventually TL2 becomes green</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; TL1.Red</formula>
+			<comment>Eventually TL1 becomes Red</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; TL1.Yellow</formula>
+			<comment>Eventually TL1 becomes Yellow</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; TL1.Green</formula>
+			<comment>Eventually TL1 becomes Green</comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; pedestrian.Walking</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; pedestrian.WantToCross</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; pedestrian.Wait</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; pedestrian.Crossing</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; ctrl.ChangingToNorth</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; ctrl.ChangingToEast</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; ctrl.PedestrianOrTraffic2</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; ctrl.PedestrianCrossing2</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; ctrl.PedestrianCrossing</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; ctrl.NorthDirectionFlowing</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; ctrl.EastDirectionFlowing</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>A[] not (TL1.Red and TL2.Red)</formula>
+			<comment>At any time both traffic lights can't be red. But in this system they can be( when the pedestrains are crossing). so this property is not satified and the correspoding trace is visible in the simulator</comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>A[] not ( pedestrian.Crossing and (TL1.Green and TL2.Green) )</formula>
+			<comment>Pedestrians are not crossing when both lights are green</comment>
+		</query>
+		<query>
+			<formula>A[] not ( TL1.Yellow and TL2.Yellow)</formula>
+			<comment>Both traffic lights can't be yellow at the same time</comment>
+		</query>
+		<query>
+			<formula>A[] not (TL1.Green and TL2.Green)</formula>
+			<comment>Both traffic lights can't be green at the same time.</comment>
+		</query>
+		<query>
+			<formula>A[] not ( (vehicle1.Crossing or vehicle2.Crossing) and pedestrian.Crossing ) </formula>
+			<comment>Pedestrians and vehicles can't cross together</comment>
+		</query>
+		<query>
+			<formula>A[] not (vehicle1.Crossing and vehicle2.Crossing)</formula>
+			<comment>The vehicles  among EW and NS directions can't cross at the same time</comment>
+		</query>
+		<query>
+			<formula>A[] not ( vehicleCrossing and (ctrl.ChangingToEast or ctrl.ChangingToNorth) )</formula>
+			<comment>When a vehicle is crossing, the controller can't change the traffic ligths.</comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>A[] not deadlock</formula>
+			<comment>We don't have deadlock</comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; vehicle1.Wait imply vehicle1.Crossing</formula>
+			<comment>When vehicle1(NS vehicle) is waiting, it will eventually crossing</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; vehicle2.Wait imply vehicle2.Crossing</formula>
+			<comment>When vehicle2( EW vehicle) is waiting, it will eventually cross.</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; pedestrian.WantToCross imply pedestrian.Crossing</formula>
+			<comment>When a pedestrian wants to cross, he/she will do so eventually</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; (ctrl.NorthDirectionFlowing or ctrl.EastDirectionFlowing) imply (ctrl.PedestrianCrossing or ctrl.PedestrianCrossing2)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; ctrl.NorthDirectionFlowing imply ctrl.EastDirectionFlowing</formula>
+			<comment>When NS lane is active eventually EW lane will be active</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; ctrl.EastDirectionFlowing imply ctrl.NorthDirectionFlowing</formula>
+			<comment>When EW lane is active eventually NS lane will be active.</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; waiting imply pedestrian.Crossing</formula>
+			<comment>When a pedestrian is waiting, he will eventually get a chance to cross</comment>
+		</query>
+	</queries>
+</nta>
