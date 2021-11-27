@@ -30,13 +30,25 @@ Inside the project directory:
 5) The properties are verified in the Verifier.
 6) If a certain property is not verified then the corresponding trace file can be seen in the simulator.
 
+
 ## Purpose  
 
 The project 'Intelligent Traffic Control Model Checking Using UPPAAL' has been created as a mini project for the course IT303- Software Engineering.  
 
+## WorkFlow
+
+1) Define the Traffic Light System and Analyze the Requirements
+2) Model the Traffic Light System in UPPAAL
+3) Simulate Flow of Traffic and Pedestrians in UPPAAL
+4) Express Reachability, Safety, Deadlock and other properties in UPPAAL using TCTL
+5) Verification of Properties in UPPAAL
+6) If the property is not verified then a trace is displayed by system not following the properties and if it is verified then the result is displayed.
+
 ## Results
 
 We have successfully modelled the traffic light system in UPPAAL and done the model checking. The reachability properties, deadlock condition, safety conditions and other properties are verified for the system.
+
+![image](https://user-images.githubusercontent.com/75511592/143681567-481dc34f-6577-4b6c-9a97-cdc71adb40b7.png)
 
 ## Contributors  
 
